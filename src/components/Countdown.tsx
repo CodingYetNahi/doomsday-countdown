@@ -1,97 +1,41 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-function pad(n:number){ return String(n).padStart(2, '0') }
+export type TimeRemaining = { diff:number; days:number; hours:number; minutes:number; seconds:number }
+const pad = (value:number) => String(value).padStart(2, '0')
 
-type Props = {
-  target: number // UTC ms
-  onComplete?: () => void
-  forceReleased?: boolean
-}
+type Props = { target:number; onComplete:()=>void; onTimeChange?:(time:TimeRemaining)=>void; forceReleased:boolean }
 
-export default function Countdown({ target, onComplete, forceReleased }: Props){
-  const [now, setNow] = useState<number>(() => Date.now())
-  const rafRef = useRef<number | null>(null)
-  const intervalRef = useRef<number | null>(null)
-  const visibilityHandlerRef = useRef<() => void>(()=>{})
-
-  const isReduced = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-
-  useEffect(()=>{
-    if(forceReleased) return;
-    function tick(){
-      setNow(Date.now())
-    }
-    // use interval for coarse updates, but always compute from absolute target
-    intervalRef.current = window.setInterval(tick, 1000)
-    // also use rAF to keep seconds visually up-to-date when visible
-    let last = performance.now()
-    function loop(ts:number){
-      const elapsed = ts - last
-      if(elapsed >= 250){
-        setNow(Date.now())
-        last = ts
-      }
-      rafRef.current = requestAnimationFrame(loop)
-    }
-    rafRef.current = requestAnimationFrame(loop)
-
-    // visibility handler: recalc immediately when tab becomes visible
-    const onVisibility = () => {
-      if(document.visibilityState === 'visible'){
-        setNow(Date.now())
-      }
-    }
-    visibilityHandlerRef.current = onVisibility
-    document.addEventListener('visibilitychange', onVisibility)
-
-    return ()=>{
-      if(intervalRef.current) clearInterval(intervalRef.current)
-      if(rafRef.current) cancelAnimationFrame(rafRef.current)
-      document.removeEventListener('visibilitychange', onVisibility)
-    }
-  }, [target, forceReleased])
-
-  const remaining = useMemo(()=>{
+export default function Countdown({ target, onComplete, onTimeChange, forceReleased }:Props){
+  const [now, setNow] = useState(Date.now)
+  const completed = useRef(false)
+  const remaining = useMemo<TimeRemaining>(() => {
     const diff = Math.max(0, target - now)
-    const totalSeconds = Math.floor(diff / 1000)
-    const days = Math.floor(totalSeconds / 86400)
-    const hours = Math.floor((totalSeconds % 86400) / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-    return { diff, days, hours, minutes, seconds }
+    const total = Math.floor(diff / 1000)
+    return { diff, days:Math.floor(total / 86400), hours:Math.floor(total % 86400 / 3600), minutes:Math.floor(total % 3600 / 60), seconds:total % 60 }
   }, [now, target])
 
-  useEffect(()=>{
-    if(!forceReleased && remaining.diff === 0){
-      // reached zero
-      if(onComplete) onComplete()
-    }
-  }, [remaining.diff, onComplete, forceReleased])
+  useEffect(() => {
+    if(forceReleased) return
+    const update = () => setNow(Date.now())
+    const timer = window.setInterval(update, 1000)
+    document.addEventListener('visibilitychange', update)
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', update) }
+  }, [forceReleased])
+  useEffect(() => { onTimeChange?.(remaining) }, [remaining, onTimeChange])
+  useEffect(() => {
+    if(!forceReleased && remaining.diff === 0 && !completed.current){ completed.current = true; onComplete() }
+  }, [forceReleased, onComplete, remaining.diff])
 
-  if(forceReleased || remaining.diff === 0){
-    return (
-      <div className="release-message" role="status">AVENGERS: DOOMSDAY HAS ARRIVED</div>
-    )
-  }
+  if(forceReleased || remaining.diff === 0) return <div className="collapse-message" role="status"><small>PROTOCOL COMPLETE</small><strong>TIMELINE COLLAPSED</strong><span>THE CONVERGENCE HAS ARRIVED</span></div>
+  return <div className="core" role="timer" aria-label={`${remaining.days} days, ${remaining.hours} hours, ${remaining.minutes} minutes and ${remaining.seconds} seconds remaining`}>
+    <div className="ring ring-outer" aria-hidden="true"/><div className="ring ring-middle" aria-hidden="true"/><div className="ring ring-inner" aria-hidden="true"/>
+    <div className="core-centre"><span className="day-value">{remaining.days}</span><span className="unit-label">DAYS</span><i/></div>
+    <TimeNode className="hours" value={pad(remaining.hours)} label="HOURS" />
+    <TimeNode className="minutes" value={pad(remaining.minutes)} label="MINUTES" />
+    <TimeNode className="seconds" value={pad(remaining.seconds)} label="SECONDS" pulseKey={remaining.seconds}/>
+  </div>
+}
 
-  return (
-    <div className="countdown-grid" role="timer" aria-live="polite">
-      <div className="card" data-unit="days">
-        <div className="value">{String(remaining.days)}</div>
-        <div className="label">DAYS</div>
-      </div>
-      <div className="card" data-unit="hours">
-        <div className="value">{pad(remaining.hours)}</div>
-        <div className="label">HOURS</div>
-      </div>
-      <div className="card" data-unit="minutes">
-        <div className="value">{pad(remaining.minutes)}</div>
-        <div className="label">MIN</div>
-      </div>
-      <div className="card" data-unit="seconds">
-        <div className="value">{pad(remaining.seconds)}</div>
-        <div className="label">SEC</div>
-      </div>
-    </div>
-  )
+function TimeNode({className,value,label,pulseKey}:{className:string;value:string;label:string;pulseKey?:number}){
+  return <div className={`time-node ${className}`} key={pulseKey}><strong>{value}</strong><span>{label}</span></div>
 }
