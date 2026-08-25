@@ -4,9 +4,12 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/generate-static-routes.mjs",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "rm -rf .test-dist && tsc -p tsconfig.test.json && node .test-dist/test/runner.js",
+    "validate:content": "node scripts/validate-drafts.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",

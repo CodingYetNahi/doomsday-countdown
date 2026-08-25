@@ -10,7 +10,14 @@ export default function AdSenseUnit() {
 
   useEffect(() => {
     if (!isAdSenseSlotConfigured || initialized.current) return
-
+    if (!document.querySelector('script[data-doomsday-adsense]')) {
+      const script = document.createElement('script')
+      script.async = true
+      script.crossOrigin = 'anonymous'
+      script.dataset.doomsdayAdsense = 'true'
+      script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT_ID}`
+      document.head.appendChild(script)
+    }
     initialized.current = true
     try {
       window.adsbygoogle = window.adsbygoogle || []
@@ -22,7 +29,7 @@ export default function AdSenseUnit() {
     }
   }, [])
 
-  if (!isAdSenseSlotConfigured) return null
+  if (!isAdSenseSlotConfigured) return import.meta.env.DEV ? <section className="ad-section ad-dev">Development ad preview: set VITE_ADSENSE_SLOT to test a real unit.</section> : null
 
   return (
     <section className="ad-section" aria-label="Advertisement">
