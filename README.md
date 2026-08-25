@@ -38,7 +38,7 @@ Milestones are presentation-only records in `src/lib/milestones.ts`. In local de
 
 ## Environment and advertising
 
-Copy `.env.example` to `.env.local`. `VITE_ADSENSE_SLOT` accepts the numeric responsive display slot created in the AdSense account. If absent/invalid, no unit or AdSense script is emitted in production; development displays a clearly labelled preview. The publisher ID remains `ca-pub-9395184812907805`, and `public/ads.txt` is authoritative. `VITE_CONTACT_URL` may be a reviewed HTTPS contact destination. Never put API keys in any `VITE_*` variable.
+Copy `.env.example` to `.env.local`. The Google AdSense publisher script is emitted unconditionally to support account-level Auto ads on eligible pages. `VITE_ADSENSE_SLOT` accepts the numeric responsive display slot created in the AdSense account and controls only the optional manual ad unit; when it is absent or invalid, that manual unit is omitted in production and development displays a clearly labelled preview. The absence of a slot does not prevent account-level Auto ads. The publisher ID remains `ca-pub-9395184812907805`, and `public/ads.txt` is authoritative. `VITE_CONTACT_URL` may be a reviewed HTTPS contact destination. Never put API keys in any `VITE_*` variable.
 
 ## Supervised drafting workflow
 
