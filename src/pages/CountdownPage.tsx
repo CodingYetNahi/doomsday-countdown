@@ -14,7 +14,18 @@ export default function CountdownPage(){
   const [themeNow,setThemeNow]=useState(current),[released,setReleased]=useState(()=>current()>=targetMs)
   const [time,setTime]=useState<TimeRemaining>(()=>{const diff=Math.max(0,targetMs-current()),total=Math.floor(diff/1000);return{diff,days:Math.floor(total/86400),hours:Math.floor(total%86400/3600),minutes:Math.floor(total%3600/60),seconds:total%60}})
   const progress=getCampaignProgress(themeNow),phase=getPhase(progress),percent=Math.round(progress*100)
-  const localRelease=useMemo(()=>new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short',timeZoneName:'short'}).format(targetMs),[targetMs])
+  const localRelease = useMemo(
+    () =>
+      new Intl.DateTimeFormat(undefined, {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      }).format(targetMs),
+    [targetMs],
+  )
   useEffect(()=>{document.documentElement.style.setProperty('--doomsday-progress',String(progress))},[progress])
   useEffect(()=>{if(previewNow!==null)return;const update=()=>setThemeNow(Date.now()),id=setInterval(update,60000);document.addEventListener('visibilitychange',update);return()=>{clearInterval(id);document.removeEventListener('visibilitychange',update)}},[previewNow])
   useEffect(()=>{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;const move=(event:PointerEvent)=>{document.documentElement.style.setProperty('--parallax-x',`${(event.clientX/innerWidth-.5)*10}px`);document.documentElement.style.setProperty('--parallax-y',`${(event.clientY/innerHeight-.5)*10}px`)};addEventListener('pointermove',move,{passive:true});return()=>removeEventListener('pointermove',move)},[])
