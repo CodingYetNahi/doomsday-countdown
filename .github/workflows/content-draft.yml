@@ -2,49 +2,40 @@ name: Supervised content draft
 on:
   workflow_dispatch:
     inputs:
-      enable_generation:
-        description: 'Type ENABLE to run the disabled-by-default generation hook'
-        required: true
-        default: 'DISABLED'
+      enable_generation: {description: 'Type ENABLE to request one draft', required: true, default: 'DISABLED'}
   schedule:
-    - cron: '17 1 * * 2,5' # 06:47 IST Tuesday and Friday
-permissions:
-  contents: write
-  pull-requests: write
+    - cron: '17 1 * * 2,5'
+permissions: {contents: write, pull-requests: write}
 jobs:
   draft:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.enable_generation == 'ENABLE' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.enable_generation == 'ENABLE') || (github.event_name == 'schedule' && vars.CONTENT_AGENT_ENABLED == 'true') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with: {fetch-depth: 0}
       - uses: actions/setup-node@v4
-        with: { node-version: 20, cache: npm }
+        with: {node-version: 20, cache: npm}
       - run: npm ci
-      - name: Stop safely without required secrets
+      - name: Generate an unpublished draft
         env:
+          CONTENT_AGENT_ENABLED: ${{ vars.CONTENT_AGENT_ENABLED }}
+          MANUAL_ENABLE: ${{ inputs.enable_generation }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CONTENT_MODEL: ${{ secrets.CONTENT_MODEL }}
-        run: |
-          test -n "$OPENAI_API_KEY" && test -n "$CONTENT_MODEL" || { echo 'Required drafting secrets are unavailable; stopping safely.'; exit 1; }
-      - name: Generation framework (paid API intentionally disabled)
-        run: |
-          echo 'The reviewed API invocation is intentionally disabled. Add a draft only after maintainers approve provider usage.'
-          exit 1
+        run: node scripts/generate-content-draft.mjs
       - run: npm run validate:content
-      - name: Ensure draft-only changes
+      - name: Enforce draft-only scope
         run: test -z "$(git diff --name-only | grep -v '^content/drafts/')"
-      - name: Create review pull request
-        uses: peter-evans/create-pull-request@v7
+      - uses: peter-evans/create-pull-request@v7
         with:
           branch: content-draft/${{ github.run_id }}
           title: 'Content draft: human review required'
           labels: content-draft,human-review-required
+          add-paths: content/drafts/
           body: |
             ## Factual review checklist
-            - [ ] Every factual claim checked against each linked authoritative source
-            - [ ] No leak, invented quotation, cast member, date, or social-only rumour
+            - [ ] Every claim checked against its linked authoritative source
+            - [ ] No leaks, invented quotations, cast, dates, or social-only rumours
             - [ ] MCU and comics continuity distinguished
-            - [ ] Originality, spoiler label, links, frontmatter and human-readable SEO checked
-            - [ ] Draft status removed only after approval
-          add-paths: content/drafts/
+            - [ ] Originality, spoilers, links, metadata and label reviewed
+            - [ ] Draft remains unpublished until a human approves it
