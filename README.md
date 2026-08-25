@@ -40,6 +40,14 @@ Milestones are presentation-only records in `src/lib/milestones.ts`. In local de
 
 Copy `.env.example` to `.env.local`. `VITE_ADSENSE_SLOT` accepts the numeric responsive display slot created in the AdSense account. If absent/invalid, no unit or AdSense script is emitted in production; development displays a clearly labelled preview. The publisher ID remains `ca-pub-9395184812907805`, and `public/ads.txt` is authoritative. `VITE_CONTACT_URL` may be a reviewed HTTPS contact destination. Never put API keys in any `VITE_*` variable.
 
+## Analytics and consent deployment
+
+GA4 measurement ID `G-CQE4TDN0YV` is loaded once in the source document head. Navigation uses ordinary `<a>` links and complete document loads, so the ordinary `gtag('config', ...)` page view is the only page-view strategy; do not enable History API page-view tracking or add manual route events. The generated static routes inherit the same tag.
+
+Consent Mode v2 defaults `analytics_storage`, `ad_storage`, `ad_user_data`, and `ad_personalization` to `denied` before configuration. The event utility sends custom events only after the CMP has issued `gtag('consent', 'update', {analytics_storage: 'granted'})`. In AdSense Privacy & Messaging, publish a Google-certified CMP for applicable regions, connect its Analytics consent choice to that update, verify all four consent signals, and ensure the GA4 web stream uses Enhanced Measurement page views without History API changes. Do not add another banner in the application. These technical defaults do not by themselves guarantee legal compliance.
+
+For release verification, use Google Tag Assistant and GA4 Realtime/DebugView after granting consent on the deployed domain. Local/test sessions remain denied unless a tester explicitly sends a consent update, limiting accidental production-property traffic.
+
 ## Supervised drafting workflow
 
 `.github/workflows/content-draft.yml` declares manual and Tuesday/Friday 01:17 UTC (06:47 IST) triggers, but generation is intentionally disabled: scheduled runs do not pass the opt-in condition, and the generation step stops before paid API use. Manually choose **Actions → Supervised content draft → Run workflow**, type `ENABLE`, and only enable the provider call after approving its implementation and cost. Required GitHub Secrets are `OPENAI_API_KEY` and `CONTENT_MODEL`; they are server-side only. GitHub may disable schedules after prolonged public-repository inactivity, while manual dispatch remains available.
