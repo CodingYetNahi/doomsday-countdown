@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/generate-static-routes.mjs",
+    "build": "vite build && node scripts/generate-static-routes.mjs && node scripts/test-static-routes.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
