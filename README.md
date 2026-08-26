@@ -38,7 +38,7 @@ Milestones are presentation-only records in `src/lib/milestones.ts`. In local de
 
 ## Environment and advertising
 
-Copy `.env.example` to `.env.local`. `VITE_ADSENSE_SLOT` accepts the numeric responsive display slot created in the AdSense account. If absent/invalid, no unit or AdSense script is emitted in production; development displays a clearly labelled preview. The publisher ID remains `ca-pub-9395184812907805`, and `public/ads.txt` is authoritative. `VITE_CONTACT_URL` may be a reviewed HTTPS contact destination. Never put API keys in any `VITE_*` variable.
+The AdSense Auto ads script loads on every route, allowing account-level Auto ads to operate without a manual ad slot. Copy `.env.example` to `.env.local` to configure optional manual units: `VITE_ADSENSE_SLOT` accepts the numeric responsive display slot created in the AdSense account. If the slot is absent or invalid, no manual unit is emitted in production; development displays a clearly labelled preview. The publisher ID remains `ca-pub-9395184812907805`, and `public/ads.txt` is authoritative. `VITE_CONTACT_URL` may be a reviewed HTTPS contact destination. Never put API keys in any `VITE_*` variable.
 
 ## Supervised drafting workflow
 
